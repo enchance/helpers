@@ -1,0 +1,14 @@
+{
+    "name": "enchance/helpers",
+    "description": "Helper methods for Laravel 5.",
+    "keywords": ["laravel"],
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "enchance",
+            "email": "enchance@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
