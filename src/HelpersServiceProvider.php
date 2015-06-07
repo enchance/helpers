@@ -14,8 +14,6 @@ class HelpersServiceProvider extends ServiceProvider {
 		$this->publishes([
 			__DIR__.'/config/helpers.php' => config_path('helpers.php'),
 		]);
-		/*
-		*/
 	}
 
 	/**
