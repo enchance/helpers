@@ -181,6 +181,15 @@ class Helpers {
 	}
 
 	/**
+	 * Remove empty <p> tags from string
+	 * @param  string $string String with HTML in it
+	 * @return string
+	 */
+	public static function removeEmptyP($string) {
+		return preg_replace('#<p>(\s+|&nbsp;|<br\s*/?>)*(</p>)(?=<p>)#', '', $string);
+	}
+
+	/**
 	 * UPDATE REQUIRED
 	 * Merges a multidimensional array based on a specified key
 	 * @param  array $results Multidimensional array to merge
