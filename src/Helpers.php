@@ -190,6 +190,32 @@ class Helpers {
 	}
 
 	/**
+	 * Truncates a string to a specified number of words.
+	 * @param  string  $text  String to truncate
+	 * @param  integer $limit Word count
+	 * @param string $end Appended to any string longer than the limit
+	 * @return string         
+	 */
+	public static function truncate($text, $limit = 3, $type = 'word', $end = '...') {
+		if($type == 'word') {
+		  if (str_word_count($text, 0) > $limit) {
+		    $words = str_word_count($text, 2);
+		    $pos = array_keys($words);
+		    $text = substr($text, 0, $pos[$limit]) . $end;
+		  }
+
+		} elseif($type == 'char') {
+			
+			$charset = 'UTF-8';
+			if(mb_strlen($text, $charset) > $limit) {
+			  $text = mb_substr($text, 0, $limit, $charset) . '...';
+			}
+		}
+
+	  return $text;
+	}
+
+	/**
 	 * UPDATE REQUIRED
 	 * Merges a multidimensional array based on a specified key
 	 * @param  array $results Multidimensional array to merge
