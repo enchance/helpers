@@ -216,21 +216,37 @@ class Helpers {
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Merges a multidimensional array based on a specified key
 	 * @param  array $results Multidimensional array to merge
 	 * @param  string $key     This becomes the key for each element (it's associative)
 	 * @return array          A simplified multidimensional array
 	 */
-	public static function multiarray_merge($results, $key){
+	public static function array_consolidate($results, $key){
 
-	    foreach($results as $val){
-	      $item = $val->$key;
-	      foreach((array)$val as $k=>$v){
-	        $arr[$item][$k][] = $v;
-	      }
-	    }
-	 }
+		foreach($results as $val){
+			$item = $val->$key;
+			foreach((array)$val as $k=>$v){
+				$arr[$item][$k][] = $v;
+			}
+		}
+
+		// Combine unique entries into a single array
+		// and non-unique entries into a single element
+		foreach($arr as $key=>$val){
+			foreach($val as $k=>$v){
+				$field = array_unique($v);
+				if(count($field) == 1){
+					$field = array_values($field);
+					$field = $field[0];
+					$arr[$key][$k] = $field;
+				} else {
+					$arr[$key][$k] = $field;
+				}
+			}
+		}
+		
+		return $arr;
+	}
 
 	/**
 	 * UPDATE REQUIRED
