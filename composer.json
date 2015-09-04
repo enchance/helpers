@@ -10,5 +10,10 @@
             "email": "enchance@gmail.com"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "Enchance\\Helpers\\": "src"
+        }
+    },
     "minimum-stability": "stable"
 }
