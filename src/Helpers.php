@@ -1,6 +1,7 @@
 <?php namespace Enchance\Helpers;
 
 use Session;
+use DateTime;
 
 class Helpers {
 
