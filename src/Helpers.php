@@ -150,9 +150,9 @@ class Helpers {
 
 		try {
 			$results = DB::select("
-				SELECT `code`, `name` FROM {$prefix}dbcountry");
+				SELECT `code`, `name` FROM {$prefix}dbcountry ORDER BY sort, `name`");
 
-			return $results ? Helper::multi2assoc($results) : array();
+			return $results ? self::array_collate($results) : [];
 		}
 		catch(Exception $e) {
 			throw new Exception;
@@ -160,6 +160,7 @@ class Helpers {
 	}
 
 	/**
+	 * INCOMPLETE
 	 * Get an option
 	 * @param  multi $option_name Option name as string|array
 	 * @param  int $user_id User ID to get options from. These would overwrite the default settings.
@@ -205,7 +206,7 @@ class Helpers {
 
 			
 		} catch(Exception $e) {
-			return '';
+			throw new Exception;
 		}
 
 	}
