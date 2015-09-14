@@ -68,14 +68,20 @@ class Helpers {
 	/**
 	 * Merges a multidimensional array based on a specified key
 	 * @param  array $results Multidimensional array to merge
-	 * @param  string $key     This becomes the key for each element (it's associative)
+	 * @param  string $name     Must be string or int. This becomes the key for each associative element.
+	 *                         The value will be used as the key, and you can't do this if it's an array or object.
+	 * @param boolean $retain_element Retain element used as the key in the multi-d array or exclude it.
 	 * @return array          A simplified multidimensional array
 	 */
-	public static function array_consolidate($results, $key){
+	public static function array_consolidate($results, $name, $retain_element = true){
 
 		foreach($results as $val){
-			$item = $val->$key;
+			$item = $val->$name;
 			foreach((array)$val as $k=>$v){
+
+				if(!$retain_element) {
+					if($item == $v) continue;
+				}
 				$arr[$item][$k][] = $v;
 			}
 		}
@@ -85,6 +91,7 @@ class Helpers {
 		foreach($arr as $key=>$val){
 			foreach($val as $k=>$v){
 				$field = array_unique($v);
+				
 				if(count($field) == 1){
 					$field = array_values($field);
 					$field = $field[0];
@@ -181,27 +188,19 @@ class Helpers {
 
 			} else {
 				if(is_string($option_name)) {
-
-					$results = DB::select("
-						SELECT optvalue, full FROM {$prefix}options WHERE optname = ? LIMIT 1",
-						array($option_name));
-
-					return $results ? $results[0] : [];
-
-				} elseif(is_array($option_name)) {
-
-					$arr = [];
-					foreach($option_name as $val) {
-						$arr[] = "'{$val}'";
-					}
-					$option_str = implode(',', $arr);
-
-					$results = DB::select("
-						SELECT optvalue, full FROM {$prefix}options WHERE optname IN({$option_str})");
-
-					return $results ? $results : [];
-
+					$option_name = [$option_name];
 				}
+
+				$arr = [];
+				foreach($option_name as $val) {
+					$arr[] = "'{$val}'";
+				}
+				$option_str = implode(',', $arr);
+
+				$results = DB::select("
+					SELECT optname, optvalue, full FROM {$prefix}options WHERE optname IN({$option_str})");
+
+				return $results ? $results : [];
 			}
 
 			
