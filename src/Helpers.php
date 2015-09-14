@@ -1,7 +1,7 @@
 <?php namespace Enchance\Helpers;
 
 use Session;
-use DateTime;
+use DB;
 
 class Helpers {
 
@@ -17,81 +17,6 @@ class Helpers {
 
 	  $mtime = filemtime($_SERVER['DOCUMENT_ROOT'] . $file);
 	  return preg_replace('{\\.([^./]+)$}', ".$mtime.\$1", $file);
-	}
-
-	/**
-	 * UPDATE REQUIRED
-	 * Generates pagination links
-	 * Initial code based on: http://www.strangerstudios.com/sandbox/pagination/diggstyle_function.txt
-	 * @param  string  $reload Path to link to
-	 * @param  integer $page       Page num to show
-	 * @param  int  $totalitems Total number of entries
-	 * @param  integer $per_page      Entries per page
-	 * @param  integer $adjacents  Number of links adjacent to active link
-	 * @param  string  $pagestring GET var to use to identify the current page
-	 * @return string              Pagination to echo
-	 */
-	public static function paginate_links($reload, $page, $total_results, $per_page, $adjacents = 4, $pagestring = 'p') {
-		// Init
-		$prevlabel = "&lsaquo; Prev";
-		$nextlabel = "Next &rsaquo;";
-		$total_pages = ceil($total_results / $per_page);
-		$out = '<ul>';
-		
-		// Prev
-		if($page == 1) {
-			// Don't output anything
-			// $out .= "<li class='prev-nolink nolink'><span>{$prevlabel}</span></li>";
-		} elseif($page == 2) {
-			$out .= "<li class='prev-link'><a href='{$reload}'>{$prevlabel}</a></li>";
-		} else {
-			$out .= "<li class='prev-link'><a href='{$reload}&amp;{$pagestring}=".($page-1)."'>{$prevlabel}</a></li>";
-		}
-
-		// First
-		if($page > ($adjacents+1)) {
-			$out .= "<li><a href='{$reload}'>1</a></li>";
-		}
-
-		// Interval
-		if($page > ($adjacents+2)) {
-			$out .= '<li class="ellipses"><span>...</span></li>';
-		}
-
-		// Pages
-		$pmin = ($page > $adjacents) ? ($page - $adjacents) : 1;
-		$pmax = ($page < ($total_pages - $adjacents)) ? ($page + $adjacents) : $total_pages;
-		for($i = $pmin; $i <= $pmax; $i++) {
-			if($i == $page) {
-				$out .= "<li class='active'><span>{$i}</span></li>";
-			} elseif($i == 1) {
-				$out .= "<li><a href='{$reload}'>{$i}</a></li>";
-			} else {
-				$out .= "<li><a href='{$reload}&amp;{$pagestring}={$i}'>{$i}</a></li>";
-			}
-		}
-
-		// Interval
-		if($page < ($total_pages - $adjacents - 1)) {
-			$out .= '<li class="ellipses"><span>...</span></li>';
-		}
-		
-		// Last
-		if($page < ($total_pages - $adjacents)) {
-			$out .= "<li><a href='{$reload}&amp;{$pagestring}={$total_pages}'>{$total_pages}</a></li>";
-		}
-			
-		// Next
-		if($page < $total_pages) {
-			$out .= "<li class='next-link'><a href='{$reload}&amp;{$pagestring}=".($page+1)."'>{$nextlabel}</a></li>";
-		} else {
-			// Don't output anything
-			// $out .= "<li class='next-nolink nolink'><span>{$nextlabel}</span></li>";
-		}
-
-		$out .= '</ul>';
-			
-		return $total_results > $per_page ? $out : '';
 	}
 
 	/**
@@ -212,6 +137,77 @@ class Helpers {
 		}
 
 		return $new_data;
+	}
+
+	/**
+	 * Returns active list of countries for the <select> field
+	 * Format: `code`=>`name`
+	 * @return array
+	 */
+	public static function get_countrylist() {
+		// Init
+		$prefix = DB::getTablePrefix();
+
+		try {
+			$results = DB::select("
+				SELECT `code`, `name` FROM {$prefix}dbcountry");
+
+			return $results ? Helper::multi2assoc($results) : array();
+		}
+		catch(Exception $e) {
+			throw new Exception;
+		}
+	}
+
+	/**
+	 * Get an option
+	 * @param  multi $option_name Option name as string|array
+	 * @param  int $user_id User ID to get options from. These would overwrite the default settings.
+	 * @return string              The value of that option
+	 */
+	public static function get_option($option_name, $user_id = null) {
+		// Init
+		$prefix = app('prefix');
+
+		try {
+
+			if($user_id) {
+				if(is_string($option_name)) {
+					// Maybe use UNION?
+				} elseif(is_array($option_name)) {
+					// 
+				}
+
+			} else {
+				if(is_string($option_name)) {
+
+					$results = DB::select("
+						SELECT optvalue, full FROM {$prefix}options WHERE optname = ? LIMIT 1",
+						array($option_name));
+
+					return $results ? $results[0] : [];
+
+				} elseif(is_array($option_name)) {
+
+					$arr = [];
+					foreach($option_name as $val) {
+						$arr[] = "'{$val}'";
+					}
+					$option_str = implode(',', $arr);
+
+					$results = DB::select("
+						SELECT optvalue, full FROM {$prefix}options WHERE optname IN({$option_str})");
+
+					return $results ? $results : [];
+
+				}
+			}
+
+			
+		} catch(Exception $e) {
+			return '';
+		}
+
 	}
 
 	/**
