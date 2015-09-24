@@ -70,10 +70,12 @@ class Helpers {
 	 * @param  array $results Multidimensional array to merge
 	 * @param  string $name     Must be string or int. This becomes the key for each associative element.
 	 *                         The value will be used as the key, and you can't do this if it's an array or object.
-	 * @param boolean $retain_element Retain element used as the key in the multi-d array or exclude it.
+	 * @param boolean $retain_element Retain or remove the element used as the key ($name param)
 	 * @return array          A simplified multidimensional array
 	 */
 	public static function array_consolidate($results, $name, $retain_element = true){
+		// Bouncer
+		if(!$results) return [];
 
 		foreach($results as $val){
 			$item = $val->$name;
@@ -170,10 +172,11 @@ class Helpers {
 	 * INCOMPLETE
 	 * Get an option
 	 * @param  multi $option_name Option name as string|array
+	 * @param boolean $simple Uses array_collate() or array_consolidate() which shows more data. Former is used most of the time.
 	 * @param  int $user_id User ID to get options from. These would overwrite the default settings.
 	 * @return string              The value of that option
 	 */
-	public static function get_option($option_name, $user_id = null) {
+	public static function get_option($option_name, $simple = true, $user_id = null) {
 		// Init
 		$prefix = app('prefix');
 
@@ -200,7 +203,15 @@ class Helpers {
 				$results = DB::select("
 					SELECT optname, optvalue, full FROM {$prefix}options WHERE optname IN({$option_str})");
 
-				return $results ? $results : [];
+				if($results) {
+					if($simple) {
+						return self::array_collate($results);
+					} else {
+						return self::array_consolidate($results, 'optname');
+					}
+				} else {
+					return [];
+				}
 			}
 
 			
