@@ -23,7 +23,9 @@ class HelpersServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
+		// Config
 		$this->mergeConfigFrom( __DIR__.'/config/helpers.php', 'helpers');
+
 		$this->app['helpers'] = $this->app->share(function($app) {
 			return new Helpers;
 		});

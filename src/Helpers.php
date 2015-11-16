@@ -162,11 +162,12 @@ class Helpers {
 	 */
 	public static function get_countrylist() {
 		// Init
-		$prefix = DB::getTablePrefix();
+		$prefix    = DB::getTablePrefix();
+		$dbcountry = config('helpers.tables.dbcountry');
 
 		try {
 			$results = DB::select("
-				SELECT `code`, `name` FROM {$prefix}dbcountry ORDER BY `name`");
+				SELECT `code`, `name` FROM {$prefix}{$dbcountry} ORDER BY `name`");
 
 			return $results ? self::array_collate($results) : [];
 		}
@@ -184,9 +185,11 @@ class Helpers {
 	 */
 	public static function get_option($option_name, $user_id = null) {
 		// Init
-		$prefix = app('prefix');
-		$arr    = [];
-		$param  = [];
+		$prefix        = app('prefix');
+		$options       = config('helpers.tables.options');
+		$users_options = config('helpers.tables.users_options');
+		$arr           = [];
+		$param         = [];
 
 		try {
 
@@ -205,16 +208,16 @@ class Helpers {
 				$param = array_merge($param, [$user_id], $param);
 
 				$results = DB::select("
-					SELECT opt.optname, uo.optvalue, opt.full FROM {$prefix}users_options uo
-						JOIN {$prefix}options `opt` ON uo.option_id = opt.id 
+					SELECT opt.optname, uo.optvalue, opt.full FROM {$prefix}{$users_options} uo
+						JOIN {$prefix}{$options} `opt` ON uo.option_id = opt.id 
 							WHERE opt.optname IN ({$q_str}) AND uo.user_id = ?
 						UNION
-					SELECT optname, optvalue, full FROM {$prefix}options WHERE optname IN ({$q_str})", $param);
+					SELECT optname, optvalue, full FROM {$prefix}{$options} WHERE optname IN ({$q_str})", $param);
 
 			} else {
 
 				$results = DB::select("
-					SELECT optname, optvalue, full FROM {$prefix}options WHERE optname IN ({$q_str})", $param);
+					SELECT optname, optvalue, full FROM {$prefix}{$options} WHERE optname IN ({$q_str})", $param);
 
 			}
 
