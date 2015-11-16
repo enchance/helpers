@@ -181,9 +181,10 @@ class Helpers {
 	 * user's option value and not the global value. You cna mix global and user options
 	 * @param  string|array $option_name A single or multiple options
 	 * @param  int $user_id User ID to get options from. These would overwrite the default settings.
+	 * @param boolean $simplify Simplify result to show optname and optvalue only
 	 * @return string              The value of that option
 	 */
-	public static function get_option($option_name, $user_id = null) {
+	public static function get_option($option_name, $user_id = null, $simplify = true) {
 		// Init
 		$prefix        = app('prefix');
 		$options       = config('helpers.tables.options');
@@ -221,7 +222,21 @@ class Helpers {
 
 			}
 
-			return $results ? self::array_consolidate($results, 'optname', true, false) : [];
+			$results = $results ? self::array_consolidate($results, 'optname', true, false) : [];
+
+			// Show results
+			if($simplify) {
+				if(!$results) return [];
+
+				$arr = [];
+				foreach($results as $key=>$val) {
+					$arr[$val['optname']] = $val['optvalue'];
+				}
+
+				return $arr;
+			} else {
+				return $results;
+			}
 			
 		} catch(Exception $e) {
 			throw new Exception;
