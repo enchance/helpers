@@ -71,9 +71,10 @@ class Helpers {
 	 * @param  string $name     Must be string or int. This becomes the key for each associative element.
 	 *                         The value will be used as the key, and you can't do this if it's an array or object.
 	 * @param boolean $retain_element Retain or remove the element used as the key ($name param)
+	 * @param boolean $show_all If there is an array in consolidation, show only the first element. Usefull for overwriting data. 
 	 * @return array          A simplified multidimensional array
 	 */
-	public static function array_consolidate($results, $name, $retain_element = true){
+	public static function array_consolidate($results, $name, $retain_element = true, $show_all = true) {
 		// Bouncer
 		if(!$results) return [];
 
@@ -84,7 +85,13 @@ class Helpers {
 				if(!$retain_element) {
 					if($item == $v) continue;
 				}
-				$arr[$item][$k][] = $v;
+
+				if($show_all) {
+					$arr[$item][$k][] = $v;
+				}
+				else {
+					if( !isset($arr[$item][$k]) ) $arr[$item][$k][0] = $v;
+				}
 			}
 		}
 
@@ -155,11 +162,12 @@ class Helpers {
 	 */
 	public static function get_countrylist() {
 		// Init
-		$prefix = DB::getTablePrefix();
+		$prefix    = DB::getTablePrefix();
+		$dbcountry = config('helpers.tables.dbcountry');
 
 		try {
 			$results = DB::select("
-				SELECT `code`, `name` FROM {$prefix}dbcountry ORDER BY sort, `name`");
+				SELECT `code`, `name` FROM {$prefix}{$dbcountry} ORDER BY `name`");
 
 			return $results ? self::array_collate($results) : [];
 		}
@@ -169,51 +177,51 @@ class Helpers {
 	}
 
 	/**
-	 * INCOMPLETE
-	 * Get an option
-	 * @param  multi $option_name Option name as string|array
-	 * @param boolean $simple Uses array_collate() or array_consolidate() which shows more data. Former is used most of the time.
+	 * Get an option value from a user. If a $user_id is supplier, it will return the
+	 * user's option value and not the global value. You cna mix global and user options
+	 * @param  string|array $option_name A single or multiple options
 	 * @param  int $user_id User ID to get options from. These would overwrite the default settings.
 	 * @return string              The value of that option
 	 */
-	public static function get_option($option_name, $simple = true, $user_id = null) {
+	public static function get_option($option_name, $user_id = null) {
 		// Init
-		$prefix = app('prefix');
+		$prefix        = app('prefix');
+		$options       = config('helpers.tables.options');
+		$users_options = config('helpers.tables.users_options');
+		$arr           = [];
+		$param         = [];
 
 		try {
 
+			// Convert string to array for shorter code
+			if(is_string($option_name)) $option_name = [$option_name];
+
+			// Generate params
+			foreach($option_name as $val) {
+				$arr[]   = '?';
+				$param[] = $val;
+			}
+			$q_str = implode(',', $arr);
+
 			if($user_id) {
-				if(is_string($option_name)) {
-					// Maybe use UNION?
-				} elseif(is_array($option_name)) {
-					// 
-				}
 
-			} else {
-				if(is_string($option_name)) {
-					$option_name = [$option_name];
-				}
-
-				$arr = [];
-				foreach($option_name as $val) {
-					$arr[] = "'{$val}'";
-				}
-				$option_str = implode(',', $arr);
+				$param = array_merge($param, [$user_id], $param);
 
 				$results = DB::select("
-					SELECT optname, optvalue, full FROM {$prefix}options WHERE optname IN({$option_str})");
+					SELECT opt.optname, uo.optvalue, opt.full FROM {$prefix}{$users_options} uo
+						JOIN {$prefix}{$options} `opt` ON uo.option_id = opt.id 
+							WHERE opt.optname IN ({$q_str}) AND uo.user_id = ?
+						UNION
+					SELECT optname, optvalue, full FROM {$prefix}{$options} WHERE optname IN ({$q_str})", $param);
 
-				if($results) {
-					if($simple) {
-						return self::array_collate($results);
-					} else {
-						return self::array_consolidate($results, 'optname');
-					}
-				} else {
-					return [];
-				}
+			} else {
+
+				$results = DB::select("
+					SELECT optname, optvalue, full FROM {$prefix}{$options} WHERE optname IN ({$q_str})", $param);
+
 			}
 
+			return $results ? self::array_consolidate($results, 'optname', true, false) : [];
 			
 		} catch(Exception $e) {
 			throw new Exception;
@@ -332,21 +340,24 @@ class Helpers {
 
 	/**
 	 * Cleanup of phone numbers
-	 * @param  multi $number Number or an array of numbers to clean
-	 * @return string         Cleaned number
+	 * @param  string|array $number Number or an array of numbers to clean
+	 * @return string         Cleaned number/s
 	 */
 	public static function cleanup_number($number) {
+		// Init
+		$replace_str = '/[\s()-\.+]+/';
 
 		if(is_string($number)) {
-			$number = str_replace(array('-', ' ', '(', ')', '+'), '', $number);
+			$number = preg_replace($replace_str, '', $number);
 			$number = trim($number);
 		} elseif(is_array($number)) {
 			foreach($number as $key=>$val) {
-				$val = str_replace(array('-', ' ', '(', ')', '+'), '', $val);
+				$val = preg_replace($replace_str, '', $val);
 				$val = trim($val);
 				$number[$key] = $val;
 			}
 		}
+
 		return $number;
 	}
 
@@ -427,9 +438,10 @@ class Helpers {
 	/**
 	 * Convert touchtone letters to numbers
 	 * @param  string $num          String containing letters
+	 * @param int $default Default number
 	 * @return string
 	 */
-	public static function touchtone_number($letter){
+	public static function touchtone_number($letter, $default = 0){
 		// Init
 		$result = '';
 		$letter = strtolower($letter);
@@ -444,7 +456,7 @@ class Helpers {
 			'y' => 9, 'z' => 9
 		];
 
-		return $keypad[$letter];
+		return isset($keypad[$letter]) ? $keypad[$letter] : $default;
 	}
 
 	/**
