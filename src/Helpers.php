@@ -159,7 +159,7 @@ class Helpers {
 
 		try {
 			$results = DB::select("
-				SELECT `code`, `name` FROM {$prefix}dbcountry ORDER BY sort, `name`");
+				SELECT `code`, `name` FROM {$prefix}dbcountry ORDER BY `name`");
 
 			return $results ? self::array_collate($results) : [];
 		}
