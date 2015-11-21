@@ -583,16 +583,16 @@ class Helpers {
 		return $arr;
 	}
 
-	public static function convertTimezone($date, $from = '', $to = '', $format = 'Y-m-d H:i:s') {
-
+	/**
+	 * Convert time from one timezone to another
+	 * @param  string $date The date to convert
+	 * @param  string $from Current timezone of date
+	 * @param  string $to   Timezone you want to convert to
+	 * @return object       Carbon object
+	 */
+	public static function convertTimezone($date, $from = '', $to = '') {
 		// Convert from one timezone to another
-		$newdate = Carbon::parse($date, $from)->timezone($to);
-
-		$date = $newdate->toDateString();
-		$time = $newdate->toTimeString();
-		$datetime = $newdate->toDateTimeString();
-
-		return compact('date', 'time', 'datetime');
+		return Carbon::parse($date, $from)->timezone($to);
 	}
 
 	/**
@@ -604,13 +604,13 @@ class Helpers {
 	 * @param  string $format  Format of the date string
 	 * @return array
 	 */
-	public static function toAppTimezone($date, $user_tz = '', $format = '') {
+	public static function toAppTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
 		// Init
 		$app_tz = config('app.timezone');
 		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
 		
-		$datetime = self::convertTimezone($date, $user_tz, $app_tz, $format);
-		return $format ? $datetime->format($format) : $datetime;
+		$carbon = self::convertTimezone($date, $user_tz, $app_tz);
+		return $carbon->format($format);
 	}
 
 	/**
@@ -622,14 +622,13 @@ class Helpers {
 	 * @param  string $format  Format of the date string
 	 * @return array
 	 */
-	public static function toUserTimezone($date, $user_tz = '', $format = '') {
+	public static function toUserTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
 		// Init
 		$app_tz = config('app.timezone');
 		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
 		
-		$datetime = self::convertTimezone($date, $app_tz, $user_tz, $format);
-		return $format ? $datetime->format($format) : $datetime;
+		$carbon = self::convertTimezone($date, $app_tz, $user_tz);
+		return $carbon->format($format);
 	}
-
 
 }
