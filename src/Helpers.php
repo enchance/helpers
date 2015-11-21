@@ -2,6 +2,7 @@
 
 use Session;
 use DB;
+use Carbon;
 
 class Helpers {
 
@@ -581,5 +582,54 @@ class Helpers {
 
 		return $arr;
 	}
+
+	public static function convertTimezone($date, $from = '', $to = '', $format = 'Y-m-d H:i:s') {
+
+		// Convert from one timezone to another
+		$newdate = Carbon::parse($date, $from)->timezone($to)->toDateTimeString();
+
+		$date = $newdate->toDateString();
+		$time = $newdate->toTimeString();
+		$datetime = $newdate->toDateTimeString();
+
+		return compact('date', 'time', 'datetime');
+	}
+
+	/**
+	 * Convert date from user's timezone to app's timezone before saving to db.
+	 * This makes sure all dates in the db are of the same timezone.
+	 * @see self::toUserTimezone() Opposite of this method
+	 * @param  string $date    Date to convert
+	 * @param  string $user_tz User's timezone
+	 * @param  string $format  Format of the date string
+	 * @return array
+	 */
+	public static function toAppTimezone($date, $user_tz = '', $format = '') {
+		// Init
+		$app_tz = config('app.timezone');
+		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
+		
+		$datetime = self::convertTimezone($date, $user_tz, $app_tz, $format);
+		return $format ? $datetime->format($format) : $datetime;
+	}
+
+	/**
+	 * Convert date from app's timezone to user's timezone before saving to db.
+	 * This customizes all dates according to the user's set timezone in their settings.
+	 * @see self::toAppTimezone() Opposite of this method
+	 * @param  string $date    Date to convert
+	 * @param  string $user_tz User's timezone
+	 * @param  string $format  Format of the date string
+	 * @return array
+	 */
+	public static function toUserTimezone($date, $user_tz = '', $format = '') {
+		// Init
+		$app_tz = config('app.timezone');
+		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
+		
+		$datetime = self::convertTimezone($date, $app_tz, $user_tz, $format);
+		return $format ? $datetime->format($format) : $datetime;
+	}
+
 
 }
