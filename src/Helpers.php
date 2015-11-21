@@ -586,7 +586,7 @@ class Helpers {
 	public static function convertTimezone($date, $from = '', $to = '', $format = 'Y-m-d H:i:s') {
 
 		// Convert from one timezone to another
-		$newdate = Carbon::parse($date, $from)->timezone($to)->toDateTimeString();
+		$newdate = Carbon::parse($date, $from)->timezone($to);
 
 		$date = $newdate->toDateString();
 		$time = $newdate->toTimeString();
