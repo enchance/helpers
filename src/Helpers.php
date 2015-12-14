@@ -631,4 +631,21 @@ class Helpers {
 		return $carbon->format($format);
 	}
 
+	/**
+	 * Enclose field names in backticks for MySQL use
+	 * @param  array $field_arr Field names
+	 * @return array
+	 */
+	public static function backtick($field_arr) {
+
+		// Bouncer
+		if(is_array($field_arr) && $field_arr) {
+			array_walk($field_arr, function(&$val) {
+				$val = "`{$val}`";
+			});
+
+			return $field_arr;
+		}
+	}
+
 }
