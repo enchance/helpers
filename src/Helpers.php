@@ -80,7 +80,7 @@ class Helpers {
 		if(!$results) return [];
 
 		foreach($results as $val){
-			$item = $val->$name;
+			$item = is_array($val) ? $val[$name] : $val->$name;
 			foreach((array)$val as $k=>$v){
 
 				if(!$retain_element) {
@@ -316,7 +316,6 @@ class Helpers {
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Splits mobile phones by prefix and number.
 	 * @param  string $number   Number to split
 	 * @param  string $split_by prefix|number
@@ -357,7 +356,7 @@ class Helpers {
 	/**
 	 * Cleanup of phone numbers
 	 * @param  string|array $number Number or an array of numbers to clean
-	 * @return string         Cleaned number/s
+	 * @return string         Cleaned number
 	 */
 	public static function cleanup_number($number) {
 		// Init
@@ -373,12 +372,10 @@ class Helpers {
 				$number[$key] = $val;
 			}
 		}
-
 		return $number;
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Clean a mobile number. Results in a number in the format +63xxxXXXXXXX
 	 * Don't try on a landline number since it will only mess it up.
 	 * @param  string $number Number to clean
@@ -387,12 +384,11 @@ class Helpers {
 	 */
 	public static function clean_mobile($num, $country_code = '') {
 		// Init
-		$num = preg_replace('/[\s()-\.]+/', '', $num);
-		$len = strlen($num);
 		$country_code = $country_code ? $country_code : '+63';
+		$num          = self::cleanup_number($num);
+		$len          = strlen($num);
 
 		switch($len) {
-
 			case 10:
 				// If 10: Add CC
 				$num = $country_code . $num;
@@ -417,14 +413,6 @@ class Helpers {
 				break;
 
 		}
-
-		// Convert letters to corresponding num
-		$num = str_replace('+', '', $num);
-		if($len >= 10 && $len <= 13) {
-			$num = '+' . self::convert_touchtone($num);
-		}
-		/*
-		*/
 
 		return $num;
 	}
@@ -476,7 +464,6 @@ class Helpers {
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Convert multiple numbers into a string
 	 * @param  array  $numbers Array of strings of numbers
 	 * @param  boolean $cleanup Numbers are cleaned before return
@@ -636,16 +623,40 @@ class Helpers {
 	 * @param  array $field_arr Field names
 	 * @return array
 	 */
-	public static function backtick($field_arr) {
+	public static function backtick($field_arr, $backtick = true) {
 
 		// Bouncer
 		if(is_array($field_arr) && $field_arr) {
-			array_walk($field_arr, function(&$val) {
-				$val = "`{$val}`";
+			array_walk($field_arr, function(&$val) use ($backtick) {
+				if($backtick) {
+					$val = "`{$val}`";
+				} else {
+					$val = addslashes($val);
+					$val = "'{$val}'";
+				}
 			});
 
 			return $field_arr;
 		}
+	}
+
+	/**
+	 * Separate numbers into the primary and seconday number
+	 * The first number becomes the primary while all the rest become secondary
+	 * regardless of how many there are.
+	 * @param  string $number Collation of numbers.
+	 * @return array         $arr[0]: primary, $arr[1]: secondary
+	 */
+	public static function get_primary_number($number) {
+		$number = str_replace('/', ',', $number);
+		$number = str_replace(' ', '', $number);
+		$number = explode(',', $number);
+
+		$arr[0] = $number[0];
+		unset($number[0]);
+		if(count($number)) $arr[1] = self::collate_numbers($number);
+
+		return $arr;
 	}
 
 }
