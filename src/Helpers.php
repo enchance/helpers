@@ -630,10 +630,12 @@ class Helpers {
 		if(is_array($field_arr) && $field_arr) {
 			array_walk($field_arr, function(&$val) use ($backtick) {
 				if($backtick) {
-					$val = "`{$val}`";
+					$arr = explode(' ', $val);
+					$val = count($arr) == 1 ? "`{$val}`" : "`{$arr[0]}` " . $arr[1];
 				} else {
 					$val = addslashes($val);
-					$val = "'{$val}'";
+					$arr = explode(' ', $val);
+					$val = count($arr) == 1 ? "'{$val}'" : "'{$arr[0]}' " . $arr[1];
 				}
 			});
 
