@@ -119,7 +119,7 @@ class Helpers {
 	 * If you want to display an array in a table with elements ordered vertically instead
 	 * of horizontally, use this. The form of the table is retained and only the ordering of the 
 	 * elements vary.
-	 * @param  	array $results Results from the DB. You may use a chunked array just be sure to set $chunk_it to FALSE
+	 * @param  	array $results Results from the DB. You may use a chunked array just be sure to set $chunk_it to false
 	 * @param 	int $cols Column count
 	 * @param 	bool chunk_it To array_chunk() or not to array_chunk()? That is the question.
 	 * @param 	int $minimum_first_col If count is less or equal than this integer, it will all be placed in the first column only
@@ -262,6 +262,7 @@ class Helpers {
 	 * @return string         
 	 */
 	public static function truncate($text, $limit = 3, $type = 'word', $end = '...') {
+
 		if($type == 'word') {
 		  if (str_word_count($text, 0) > $limit) {
 		    $words = str_word_count($text, 2);
@@ -273,7 +274,7 @@ class Helpers {
 			
 			$charset = 'UTF-8';
 			if(mb_strlen($text, $charset) > $limit) {
-			  $text = mb_substr($text, 0, $limit, $charset) . '...';
+			  $text = mb_substr($text, 0, $limit, $charset) . $end;
 			}
 		}
 
@@ -286,17 +287,17 @@ class Helpers {
 	 * @param  array  $list         Array of options
 	 * @param  string  $active      The active <option> to be selected
 	 * @param  boolean $has_default Adds a default '- choose -' option at the beginning
-	 * @param  string $chooseone Config entry name
+	 * @param  string $chooseone    Text for 0 selection
 	 * @return string               Complete <option> list
 	 */
-	public static function create_select_options($list, $active = '', $retain_keys = FALSE, $chooseone = 'default.choose_one'){
+	public static function create_select_options($list, $active = '', $retain_keys = false, $chooseone = '- choose -'){
 		// Init
 		$str = '';
-		$choose_one_text = array_values(Config::get($chooseone));
+		// $choose_one_text = [$chooseone];
 
 		foreach($list as $key=>$val) {
 			// Skip if default option
-			if($val == $choose_one_text[0]) {
+			if($val == $chooseone) {
 				$str .= "<option value='0'>{$val}</option>";
 				continue;
 			}

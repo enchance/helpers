@@ -80,6 +80,7 @@ class HelpersTest extends TestCase {
 
 	/**
 	 * @dataProvider cleanup_number_data
+	 * @group phone
 	 */
 	public function testCleanupNumber($data, $expected) {
 		$this->assertEquals($expected, Helpers::cleanup_number($data));
@@ -105,14 +106,14 @@ class HelpersTest extends TestCase {
 
 	public function touchtone_data() {
 		return [
-			['ABC', '222'],
-			['DEF', '333'],
-			['GHI', '444'],
-			['JKL', '555'],
-			['MNO', '666'],
-			['PQRS', '7777'],
-			['TUV', '888'],
-			['WXYZ', '9999'],
+			['ABC','222'],
+			['DEF','333'],
+			['GHI','444'],
+			['JKL','555'],
+			['MNO','666'],
+			['PQRS','7777'],
+			['TUV','888'],
+			['WXYZ','9999'],
 		];
 	}
 
@@ -200,5 +201,67 @@ class HelpersTest extends TestCase {
 		];
 	}
 
+	/**
+	 * @dataProvider removeEmptyP_data
+	 * @group strings
+	 */
+	public function testRemoveEmptyP($expected, $data) {
+		$this->assertEquals($expected, Helpers::removeEmptyP($data));
+	}
+
+	public function removeEmptyP_data() {
+		return [
+			['<p>xxx</p>', '<p></p><p>xxx</p>'],
+			['<p>xxx</p>', '<p> </p><p>xxx</p>'],
+			['<p>xxx</p>', '<p> </p><p>xxx</p>'],
+			['<p>xxx</p>', '<p>&nbsp;</p><p>xxx</p>'],
+			['<p>xxx</p>', '<p><br /></p><p>xxx</p>'],
+			['<p>xxx</p>', '<p><br /><br />&nbsp;</p><p>xxx</p>'],
+		];
+	}
+
+	/**
+	 * @dataProvider truncateword_data
+	 * @group strings
+	 */
+	public function testTruncateWord($data, $expected) {
+		$this->assertEquals($expected, Helpers::truncate($data));
+	}
+
+	public function truncateword_data() {
+		return [
+			['This is how we roll', 'This is how ...'],
+			["This isn't how it's suppose dto be", "This isn't how ..."]
+		];
+	}
+
+	/**
+	 * @dataProvider truncatechar_data
+	 * @group strings
+	 */
+	public function testTruncateChar($data, $expected) {
+		$this->assertEquals($expected, Helpers::truncate($data, 5, 'char'));
+	}
+
+	public function truncatechar_data() {
+		return [
+			['This is how we roll', 'This ...'],
+			["This isn't how it's suppose dto be", "This ..."]
+		];
+	}
+
+	/**
+	 * @dataProvider create_select_options_data
+	 * @group strings
+	 */
+	public function testCreateSelectOptions($data, $expected) {
+		$this->assertEquals($expected, Helpers::create_select_options($data));
+	}
+
+	public function create_select_options_data() {
+		return [
+			[['xxx'=>'Hey', 'yyy'=>'You'], "<option value='xxx'>Hey</option><option value='yyy'>You</option>"],
+		];
+	}
 
 }
