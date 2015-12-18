@@ -624,18 +624,26 @@ class Helpers {
 	 * @param  array $field_arr Field names
 	 * @return array
 	 */
-	public static function backtick($field_arr, $backtick = true) {
+	public static function backtick($field_arr, $backtick = true, $split = true) {
 
 		// Bouncer
 		if(is_array($field_arr) && $field_arr) {
-			array_walk($field_arr, function(&$val) use ($backtick) {
+			array_walk($field_arr, function(&$val) use ($backtick, $split) {
 				if($backtick) {
 					$arr = explode(' ', $val);
-					$val = count($arr) == 1 ? "`{$val}`" : "`{$arr[0]}` " . $arr[1];
+					if(count($arr) == 1) {
+						$val = "`{$val}`";
+					} else {
+						$val = $split ? "`{$arr[0]}` " . $arr[1] : "`{$val}`";
+					}
 				} else {
 					$val = addslashes($val);
 					$arr = explode(' ', $val);
-					$val = count($arr) == 1 ? "'{$val}'" : "'{$arr[0]}' " . $arr[1];
+					if(count($arr) == 1) {
+						$val = "'{$val}'";
+					} else {
+						$val = $split ? "'{$arr[0]}' " . $arr[1] : "'{$val}'";
+					}
 				}
 			});
 
