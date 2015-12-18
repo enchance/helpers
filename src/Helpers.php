@@ -2,6 +2,7 @@
 
 use Session;
 use DB;
+use Carbon;
 
 class Helpers {
 
@@ -79,7 +80,7 @@ class Helpers {
 		if(!$results) return [];
 
 		foreach($results as $val){
-			$item = $val->$name;
+			$item = is_array($val) ? $val[$name] : $val->$name;
 			foreach((array)$val as $k=>$v){
 
 				if(!$retain_element) {
@@ -118,7 +119,7 @@ class Helpers {
 	 * If you want to display an array in a table with elements ordered vertically instead
 	 * of horizontally, use this. The form of the table is retained and only the ordering of the 
 	 * elements vary.
-	 * @param  	array $results Results from the DB. You may use a chunked array just be sure to set $chunk_it to FALSE
+	 * @param  	array $results Results from the DB. You may use a chunked array just be sure to set $chunk_it to false
 	 * @param 	int $cols Column count
 	 * @param 	bool chunk_it To array_chunk() or not to array_chunk()? That is the question.
 	 * @param 	int $minimum_first_col If count is less or equal than this integer, it will all be placed in the first column only
@@ -181,9 +182,10 @@ class Helpers {
 	 * user's option value and not the global value. You cna mix global and user options
 	 * @param  string|array $option_name A single or multiple options
 	 * @param  int $user_id User ID to get options from. These would overwrite the default settings.
+	 * @param boolean $simplify Simplify result to show optname and optvalue only
 	 * @return string              The value of that option
 	 */
-	public static function get_option($option_name, $user_id = null) {
+	public static function get_option($option_name, $user_id = null, $simplify = true) {
 		// Init
 		$prefix        = app('prefix');
 		$options       = config('helpers.tables.options');
@@ -221,7 +223,21 @@ class Helpers {
 
 			}
 
-			return $results ? self::array_consolidate($results, 'optname', true, false) : [];
+			$results = $results ? self::array_consolidate($results, 'optname', true, false) : [];
+
+			// Show results
+			if($simplify) {
+				if(!$results) return [];
+
+				$arr = [];
+				foreach($results as $key=>$val) {
+					$arr[$val['optname']] = $val['optvalue'];
+				}
+
+				return $arr;
+			} else {
+				return $results;
+			}
 			
 		} catch(Exception $e) {
 			throw new Exception;
@@ -246,6 +262,7 @@ class Helpers {
 	 * @return string         
 	 */
 	public static function truncate($text, $limit = 3, $type = 'word', $end = '...') {
+
 		if($type == 'word') {
 		  if (str_word_count($text, 0) > $limit) {
 		    $words = str_word_count($text, 2);
@@ -257,7 +274,7 @@ class Helpers {
 			
 			$charset = 'UTF-8';
 			if(mb_strlen($text, $charset) > $limit) {
-			  $text = mb_substr($text, 0, $limit, $charset) . '...';
+			  $text = mb_substr($text, 0, $limit, $charset) . $end;
 			}
 		}
 
@@ -270,17 +287,17 @@ class Helpers {
 	 * @param  array  $list         Array of options
 	 * @param  string  $active      The active <option> to be selected
 	 * @param  boolean $has_default Adds a default '- choose -' option at the beginning
-	 * @param  string $chooseone Config entry name
+	 * @param  string $chooseone    Text for 0 selection
 	 * @return string               Complete <option> list
 	 */
-	public static function create_select_options($list, $active = '', $retain_keys = FALSE, $chooseone = 'default.choose_one'){
+	public static function create_select_options($list, $active = '', $retain_keys = false, $chooseone = '- choose -'){
 		// Init
 		$str = '';
-		$choose_one_text = array_values(Config::get($chooseone));
+		// $choose_one_text = [$chooseone];
 
 		foreach($list as $key=>$val) {
 			// Skip if default option
-			if($val == $choose_one_text[0]) {
+			if($val == $chooseone) {
 				$str .= "<option value='0'>{$val}</option>";
 				continue;
 			}
@@ -300,7 +317,6 @@ class Helpers {
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Splits mobile phones by prefix and number.
 	 * @param  string $number   Number to split
 	 * @param  string $split_by prefix|number
@@ -341,11 +357,11 @@ class Helpers {
 	/**
 	 * Cleanup of phone numbers
 	 * @param  string|array $number Number or an array of numbers to clean
-	 * @return string         Cleaned number/s
+	 * @return string         Cleaned number
 	 */
 	public static function cleanup_number($number) {
 		// Init
-		$replace_str = '/[\s()-\.+]+/';
+		$replace_str = config('helpers.regex.cleanup_number');
 
 		if(is_string($number)) {
 			$number = preg_replace($replace_str, '', $number);
@@ -357,12 +373,10 @@ class Helpers {
 				$number[$key] = $val;
 			}
 		}
-
 		return $number;
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Clean a mobile number. Results in a number in the format +63xxxXXXXXXX
 	 * Don't try on a landline number since it will only mess it up.
 	 * @param  string $number Number to clean
@@ -371,12 +385,11 @@ class Helpers {
 	 */
 	public static function clean_mobile($num, $country_code = '') {
 		// Init
-		$num = preg_replace('/[\s()-\.]+/', '', $num);
-		$len = strlen($num);
 		$country_code = $country_code ? $country_code : '+63';
+		$num          = self::cleanup_number($num);
+		$len          = strlen($num);
 
 		switch($len) {
-
 			case 10:
 				// If 10: Add CC
 				$num = $country_code . $num;
@@ -401,14 +414,6 @@ class Helpers {
 				break;
 
 		}
-
-		// Convert letters to corresponding num
-		$num = str_replace('+', '', $num);
-		if($len >= 10 && $len <= 13) {
-			$num = '+' . self::convert_touchtone($num);
-		}
-		/*
-		*/
 
 		return $num;
 	}
@@ -460,7 +465,6 @@ class Helpers {
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Convert multiple numbers into a string
 	 * @param  array  $numbers Array of strings of numbers
 	 * @param  boolean $cleanup Numbers are cleaned before return
@@ -565,6 +569,162 @@ class Helpers {
 		}
 
 		return $arr;
+	}
+
+	/**
+	 * Convert time from one timezone to another
+	 * @param  string $date The date to convert
+	 * @param  string $from Current timezone of date
+	 * @param  string $to   Timezone you want to convert to
+	 * @return object       Carbon object
+	 */
+	public static function convertTimezone($date, $from = '', $to = '') {
+		// Convert from one timezone to another
+		return Carbon::parse($date, $from)->timezone($to);
+	}
+
+	/**
+	 * Convert date from user's timezone to app's timezone before saving to db.
+	 * This makes sure all dates in the db are of the same timezone.
+	 * @see self::toUserTimezone() Opposite of this method
+	 * @param  string $date    Date to convert
+	 * @param  string $user_tz User's timezone
+	 * @param  string $format  Format of the date string
+	 * @return array
+	 */
+	public static function toAppTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
+		// Init
+		$app_tz = config('app.timezone');
+		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
+		
+		$carbon = self::convertTimezone($date, $user_tz, $app_tz);
+		return $carbon->format($format);
+	}
+
+	/**
+	 * Convert date from app's timezone to user's timezone before saving to db.
+	 * This customizes all dates according to the user's set timezone in their settings.
+	 * @see self::toAppTimezone() Opposite of this method
+	 * @param  string $date    Date to convert
+	 * @param  string $user_tz User's timezone
+	 * @param  string $format  Format of the date string
+	 * @return array
+	 */
+	public static function toUserTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
+		// Init
+		$app_tz = config('app.timezone');
+		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
+		
+		$carbon = self::convertTimezone($date, $app_tz, $user_tz);
+		return $carbon->format($format);
+	}
+
+	/**
+	 * Enclose field names in backticks for MySQL use
+	 * @param  array $field_arr Field names
+	 * @return array
+	 */
+	public static function backtick($field_arr, $backtick = true) {
+
+		// Bouncer
+		if(is_array($field_arr) && $field_arr) {
+			array_walk($field_arr, function(&$val) use ($backtick) {
+				if($backtick) {
+					$val = "`{$val}`";
+				} else {
+					$val = addslashes($val);
+					$val = "'{$val}'";
+				}
+			});
+
+			return $field_arr;
+		}
+	}
+
+	/**
+	 * Separate numbers into the primary and seconday number
+	 * The first number becomes the primary while all the rest become secondary
+	 * regardless of how many there are.
+	 * @param  string $number Collation of numbers.
+	 * @return array         $arr[0]: primary, $arr[1]: secondary
+	 */
+	public static function get_primary_number($number) {
+		$number = str_replace('/', ',', $number);
+		$number = str_replace(' ', '', $number);
+		$number = explode(',', $number);
+
+		$arr[0] = $number[0];
+		unset($number[0]);
+		if(count($number)) $arr[1] = self::collate_numbers($number);
+
+		return $arr;
+	}
+
+	/**
+	 * Break a fullname in first and last name
+	 * @param string $fullname Fullname that needs to be broken
+	 * @return array
+	 */
+	public static function parse_name($fullname) {
+		// Init
+		$prefix = config('helpers.regex.name_prefix');
+		$suffix = config('helpers.regex.name_suffix');
+		$append = '';
+		
+		// Boom!
+		$arr = explode(' ', $fullname);
+		$arr = array_filter($arr);
+
+		// Isolate appended names
+		$reverse = array_reverse($arr);
+		preg_match($suffix, $reverse[0], $matches);
+		$matches = array_filter($matches);
+		if($matches) {
+			$append = $reverse[0];
+			unset($reverse[0]);
+		}
+		$arr = array_reverse($reverse);
+
+		if(count($arr) == 1) {
+
+			$firstname = $arr[0];
+			$lastname  = '';
+
+		} elseif(count($arr) == 2) {
+
+			$firstname = $arr[0];
+			$lastname  = $arr[1];
+
+		} elseif(count($arr) == 3) {
+
+			// Check
+			if( preg_match($prefix, $arr[1]) ) {
+				$firstname = $arr[0];
+				$lastname  = "{$arr[1]} {$arr[2]}";
+			} else {
+				$firstname = "{$arr[0]} {$arr[1]}";
+				$lastname  = $arr[2];
+			}
+
+		} else {
+
+			if( preg_match($prefix, $arr[1]) ) {
+				$firstname = $arr[0];
+				$lastname = "{$arr[1]} {$arr[2]} {$arr[3]}";
+			} elseif( preg_match($prefix, $arr[2]) ) {
+				$firstname = "{$arr[0]} {$arr[1]}";
+				$lastname = "{$arr[2]} {$arr[3]}";
+			} else {
+				$firstname = "{$arr[0]} {$arr[1]} {$arr[2]}";
+				$lastname = $arr[3];
+			}
+
+		}
+
+		$firstname = trim($firstname);
+		$lastname .= " {$append}";
+		$lastname = trim($lastname);
+		return compact('firstname', 'lastname');
 	}
 
 }

@@ -4,6 +4,7 @@
     "keywords": ["laravel"],
     "license": "MIT",
     "type": "library",
+    "require": {},
     "authors": [
         {
             "name": "enchance",
