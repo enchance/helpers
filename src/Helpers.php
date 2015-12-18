@@ -360,7 +360,7 @@ class Helpers {
 	 */
 	public static function cleanup_number($number) {
 		// Init
-		$replace_str = '/[\s()-\.+]+/';
+		$replace_str = config('helpers.regex.cleanup_number');
 
 		if(is_string($number)) {
 			$number = preg_replace($replace_str, '', $number);
@@ -657,6 +657,73 @@ class Helpers {
 		if(count($number)) $arr[1] = self::collate_numbers($number);
 
 		return $arr;
+	}
+
+	/**
+	 * Break a fullname in first and last name
+	 * @param string $fullname Fullname that needs to be broken
+	 * @return array
+	 */
+	public static function parse_name($fullname) {
+		// Init
+		$prefix = config('helpers.regex.name_prefix');
+		$suffix = config('helpers.regex.name_suffix');
+		$append = '';
+		
+		// Boom!
+		$arr = explode(' ', $fullname);
+		$arr = array_filter($arr);
+
+		// Isolate appended names
+		$reverse = array_reverse($arr);
+		preg_match($suffix, $reverse[0], $matches);
+		$matches = array_filter($matches);
+		if($matches) {
+			$append = $reverse[0];
+			unset($reverse[0]);
+		}
+		$arr = array_reverse($reverse);
+
+		if(count($arr) == 1) {
+
+			$firstname = $arr[0];
+			$lastname  = '';
+
+		} elseif(count($arr) == 2) {
+
+			$firstname = $arr[0];
+			$lastname  = $arr[1];
+
+		} elseif(count($arr) == 3) {
+
+			// Check
+			if( preg_match($prefix, $arr[1]) ) {
+				$firstname = $arr[0];
+				$lastname  = "{$arr[1]} {$arr[2]}";
+			} else {
+				$firstname = "{$arr[0]} {$arr[1]}";
+				$lastname  = $arr[2];
+			}
+
+		} else {
+
+			if( preg_match($prefix, $arr[1]) ) {
+				$firstname = $arr[0];
+				$lastname = "{$arr[1]} {$arr[2]} {$arr[3]}";
+			} elseif( preg_match($prefix, $arr[2]) ) {
+				$firstname = "{$arr[0]} {$arr[1]}";
+				$lastname = "{$arr[2]} {$arr[3]}";
+			} else {
+				$firstname = "{$arr[0]} {$arr[1]} {$arr[2]}";
+				$lastname = $arr[3];
+			}
+
+		}
+
+		$firstname = trim($firstname);
+		$lastname .= " {$append}";
+		$lastname = trim($lastname);
+		return compact('firstname', 'lastname');
 	}
 
 }
