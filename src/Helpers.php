@@ -737,4 +737,34 @@ class Helpers {
 		return compact('firstname', 'lastname');
 	}
 
+	/**
+	 * Generates the string to be used when sorting.
+	 * @param  string  $sort        Comma-separated list of fields to sort through
+	 * @param  string  $dir         asc|desc
+	 * @param  boolean $distribute  If $sort has more than one element, apply $dir to all or only the first element
+	 * @param  string  $default_dir Default $dir if only the first element uses $dir but there are multiple elements
+	 * @return string
+	 */
+	public static function sort_str($sort, $dir, $distribute = true, $default_dir = 'ASC') {
+		// Init
+		$sort_arr = explode(',', $sort);
+
+		if($distribute) {
+			// Apply $dir to all sorts
+			array_walk($sort_arr, function(&$val) use ($dir) {
+				$val = "{$val} {$dir}";
+			});
+			$sort_str = implode(', ', $sort_arr);
+		}
+		else {
+			// Apply $dir to only the first sort
+			foreach($sort_arr as $key=>$val) {
+				$arr[] = $key == 0 ? "{$val} {$dir}" : "{$val} {$default_dir}";
+			}
+			$sort_str = implode(', ', $arr);
+		}
+
+		return $sort_str;
+	}
+
 }
