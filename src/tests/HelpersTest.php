@@ -155,13 +155,22 @@ class HelpersTest extends TestCase {
 	 * @group strings
 	 */
 	public function testBacktick() {
-		$arr1 = Helpers::backtick(['a', 'b']);
-		$arr2 = Helpers::backtick(['a', 'b'], false);
 
-		$this->assertEquals("`a`", $arr1[0]);
-		$this->assertEquals("`b`", $arr1[1]);
-		$this->assertEquals("'a'", $arr2[0]);
-		$this->assertEquals("'b'", $arr2[1]);
+		$arr = Helpers::backtick(['a', 'b']);
+		$this->assertEquals("`a`", $arr[0]);
+		$this->assertEquals("`b`", $arr[1]);
+
+		$arr = Helpers::backtick(['a', 'b'], false);
+		$this->assertEquals("'a'", $arr[0]);
+		$this->assertEquals("'b'", $arr[1]);
+
+		$arr = Helpers::backtick(['a x', 'b'], false, false);
+		$this->assertEquals("'a x'", $arr[0]);
+		$this->assertEquals("'b'", $arr[1]);
+
+		$arr = Helpers::backtick(['a x', 'b'], false);
+		$this->assertEquals("'a' x", $arr[0]);
+		$this->assertEquals("'b'", $arr[1]);
 	}
 
 	/**

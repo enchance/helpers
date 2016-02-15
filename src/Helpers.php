@@ -178,6 +178,27 @@ class Helpers {
 	}
 
 	/**
+	 * Returns active list of currencies for the <select> field
+	 * Format: `currency_code`=>`currency`
+	 * @return array
+	 */
+	public static function get_currencylist() {
+		// Init
+		$prefix = app('prefix');
+
+		try {
+			$results = DB::select("
+				SELECT currency_code, currency FROM {$prefix}dbcountry");
+
+			return $results ? self::array_collate($results) : [];
+		}
+		catch(Exception $e) {
+			throw new Exception;
+			// Session::flash('datafail', trans('generic.datafail') );
+		}
+	}
+
+	/**
 	 * Get an option value from a user. If a $user_id is supplier, it will return the
 	 * user's option value and not the global value. You cna mix global and user options
 	 * @param  string|array $option_name A single or multiple options
@@ -282,11 +303,10 @@ class Helpers {
 	}
 
 	/**
-	 * UPDATE REQUIRED
 	 * Manually create the <option> tags for <select> fields
 	 * @param  array  $list         Array of options
 	 * @param  string  $active      The active <option> to be selected
-	 * @param  boolean $has_default Adds a default '- choose -' option at the beginning
+	 * @param  boolean $retain_keys Retains the keys instead of using the value as the key
 	 * @param  string $chooseone    Text for 0 selection
 	 * @return string               Complete <option> list
 	 */
@@ -315,6 +335,40 @@ class Helpers {
 
 		return $str;
 	}
+
+	/**
+	 * NEEDS TO BE CHECKED
+	 * Generate an HTML string of <option> tags for a <select> field
+	 * from an array of country codes (not names)
+	 * @param  array $countrycode_arr Array of country codes
+	 * @return string                  HTML string of <option> tags for inserting into a <select> tag
+	 */
+	/*public static function countrycode_to_options($countrycode_arr) {
+		// Init
+		$prefix = app('prefix');
+		$arr = [];
+
+		// Cleaner
+		foreach($countrycode_arr as $val) {
+			$arr[] = "'{$val}'";
+		}
+		$str = implode(',', $arr);
+
+		try {
+			$results = DB::select("
+				SELECT `code`, `name` FROM {$prefix}dbcountry
+					WHERE `code` IN ({$str})");
+
+			if($results) {
+				$results = self::array_collate($results);
+				$results = self::create_select_options($results);
+			}
+			return $results ?  : '';
+		}
+		catch(Exception $e) {
+			throw new Exception;
+		}
+	}*/
 
 	/**
 	 * Splits mobile phones by prefix and number.
@@ -624,16 +678,26 @@ class Helpers {
 	 * @param  array $field_arr Field names
 	 * @return array
 	 */
-	public static function backtick($field_arr, $backtick = true) {
+	public static function backtick($field_arr, $backtick = true, $split = true) {
 
 		// Bouncer
 		if(is_array($field_arr) && $field_arr) {
-			array_walk($field_arr, function(&$val) use ($backtick) {
+			array_walk($field_arr, function(&$val) use ($backtick, $split) {
 				if($backtick) {
-					$val = "`{$val}`";
+					$arr = explode(' ', $val);
+					if(count($arr) == 1) {
+						$val = "`{$val}`";
+					} else {
+						$val = $split ? "`{$arr[0]}` " . $arr[1] : "`{$val}`";
+					}
 				} else {
 					$val = addslashes($val);
-					$val = "'{$val}'";
+					$arr = explode(' ', $val);
+					if(count($arr) == 1) {
+						$val = "'{$val}'";
+					} else {
+						$val = $split ? "'{$arr[0]}' " . $arr[1] : "'{$val}'";
+					}
 				}
 			});
 
@@ -725,6 +789,36 @@ class Helpers {
 		$lastname .= " {$append}";
 		$lastname = trim($lastname);
 		return compact('firstname', 'lastname');
+	}
+
+	/**
+	 * Generates the string to be used when sorting.
+	 * @param  string  $sort        Comma-separated list of fields to sort through
+	 * @param  string  $dir         asc|desc
+	 * @param  boolean $distribute  If $sort has more than one element, apply $dir to all or only the first element
+	 * @param  string  $default_dir Default $dir if only the first element uses $dir but there are multiple elements
+	 * @return string
+	 */
+	public static function sort_str($sort, $dir, $distribute = true, $default_dir = 'ASC') {
+		// Init
+		$sort_arr = explode(',', $sort);
+
+		if($distribute) {
+			// Apply $dir to all sorts
+			array_walk($sort_arr, function(&$val) use ($dir) {
+				$val = "{$val} {$dir}";
+			});
+			$sort_str = implode(', ', $sort_arr);
+		}
+		else {
+			// Apply $dir to only the first sort
+			foreach($sort_arr as $key=>$val) {
+				$arr[] = $key == 0 ? "{$val} {$dir}" : "{$val} {$default_dir}";
+			}
+			$sort_str = implode(', ', $arr);
+		}
+
+		return $sort_str;
 	}
 
 }
