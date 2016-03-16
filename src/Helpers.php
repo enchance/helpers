@@ -60,8 +60,46 @@ class Helpers {
 				}
 			}
 
-			
 		}
+
+		return $arr;
+	}
+
+	/**
+	 * Capitalize results from self::array_collate()
+	 * @param  array  $results    Results from self::array_collate()
+	 * @param  array   $param      allcaps|lower will force allcaps or lowercase to an array of words or a sting if it's just one
+	 * @return array              Results from original array with modified values (keys are the same, only values are modified)
+	 */
+	public static function array_collate_cap($results, $param = []) {
+		// Init
+		extract($param);
+
+		$arr = self::array_collate($results);
+
+		// Default
+		$allcaps = isset($allcaps) ? $allcaps : [];
+		$lower   = isset($lower) ? $lower : [];
+
+		// Capialize the value
+		array_walk($arr, function(&$val) use ($allcaps, $lower) {
+			$val = ucwords($val);
+
+			if($allcaps) {
+				$allcaps = is_array($allcaps) ? $allcaps : [$allcaps];
+				foreach($allcaps as $v) {
+					$val = preg_replace("/\b{$v}\b/i", strtoupper($v), $val);
+				}
+			}
+
+			if($lower) {
+				$lower = is_array($lower) ? $lower : [$lower];
+				foreach($lower as $v) {
+					$val = preg_replace("/\b{$v}\b/i", strtolower($v), $val);
+				}
+			}
+
+		});
 
 		return $arr;
 	}
