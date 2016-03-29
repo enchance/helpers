@@ -220,13 +220,19 @@ class Helpers {
 	 * Format: `currency_code`=>`currency`
 	 * @return array
 	 */
-	public static function get_currencylist() {
+	public static function get_currencylist($code = false) {
 		// Init
 		$prefix = app('prefix');
 
 		try {
 			$results = DB::select("
 				SELECT currency_code, currency FROM {$prefix}dbcountry");
+
+			if($code) {
+				foreach($results as $key=>$val) {
+					unset($results[$key]->currency);
+				}
+			}
 
 			return $results ? self::array_collate($results) : [];
 		}
