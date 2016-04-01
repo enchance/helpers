@@ -865,4 +865,21 @@ class Helpers {
 		return $sort_str;
 	}
 
+	/**
+	 * Abort
+	 * @param  int $error   403|404|500|503
+	 * @param  string $message Optional message
+	 * @return bool
+	 */
+	public static function abort($error, $message = '') {
+		abort($error);
+
+		if($message) {
+			Log::error($message);
+		}
+
+		return true;
+	}
+
+
 }
