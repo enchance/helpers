@@ -881,5 +881,23 @@ class Helpers {
 		return true;
 	}
 
+	/**
+	 * Convert a array into an associative one
+	 * @param  arr  $arr   Array to convert to assoc
+	 * @param  boolean $lower Lowercase the $key
+	 * @return array         Assoc array
+	 */
+	public static function array_assoc($arr, $lower = true) {
+		foreach($arr as $val) {
+			if($lower) {
+				$new_arr[strtolower($val)] = $val;
+			} else {
+				$new_arr[$val] = $val;
+			}
+		}
+
+		return $new_arr;
+	}
+
 
 }
