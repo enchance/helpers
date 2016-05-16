@@ -107,8 +107,8 @@ class Helpers {
 	/**
 	 * Merges a multidimensional array based on a specified key
 	 * @param  array $results Multidimensional array to merge
-	 * @param  string $name     Must be string or int. This becomes the key for each associative element.
-	 *                         The value will be used as the key, and you can't do this if it's an array or object.
+	 * @param  string $name   string|int This becomes the key for each associative element.
+	 *                        The value will be used as the key, and you can't do this if it's an array or object.
 	 * @param boolean $retain_element Retain or remove the element used as the key ($name param)
 	 * @param boolean $show_all If there is an array in consolidation, show only the first element. Usefull for overwriting data. 
 	 * @return array          A simplified multidimensional array
@@ -118,18 +118,18 @@ class Helpers {
 		if(!$results) return [];
 
 		foreach($results as $val){
-			$item = is_array($val) ? $val[$name] : $val->$name;
+			$base = is_array($val) ? $val[$name] : $val->$name;
 			foreach((array)$val as $k=>$v){
 
 				if(!$retain_element) {
-					if($item == $v) continue;
+					if($base == $v) continue;
 				}
 
 				if($show_all) {
-					$arr[$item][$k][] = $v;
+					$arr[$base][$k][] = $v;
 				}
 				else {
-					if( !isset($arr[$item][$k]) ) $arr[$item][$k][0] = $v;
+					if( !isset($arr[$base][$k]) ) $arr[$base][$k][0] = $v;
 				}
 			}
 		}
@@ -150,6 +150,30 @@ class Helpers {
 			}
 		}
 		
+		return $arr;
+	}
+
+	/**
+	 * Gathers the array nested arrays based on the value of a specific key.
+	 * Works much like array_consolidate() except all arrays are retained
+	 * @param  array $results Multidimensional array to merge
+	 * @param  string $name   string|int This becomes the key for each associative element.
+	 * @return array          A simplified multidimensional array
+	 */
+	public static function array_gather($results, $name) {
+		// Init
+		$arr = [];
+
+		// Bouncer
+		if(!$results) return [];
+
+		foreach($results as $key=>$val){
+			$base = is_array($val) ? $val[$name] : $val->$name;
+			foreach((array)$val as $k=>$v){
+				$arr[$base][$key] = $val;
+			}
+		}
+
 		return $arr;
 	}
 
@@ -682,6 +706,17 @@ class Helpers {
 	}
 
 	/**
+	 * Alias for self::convertTimezone()
+	 * @param  string $date The date to convert
+	 * @param  string $from Current timezone of date
+	 * @param  string $to   Timezone you want to convert to
+	 * @return object       Carbon object
+	 */
+	public static function tz($date, $from = '', $to = '') {
+		return self::convertTimezone($date, $from, $to);
+	}
+
+	/**
 	 * Convert date from user's timezone to app's timezone before saving to db.
 	 * This makes sure all dates in the db are of the same timezone.
 	 * @see self::toUserTimezone() Opposite of this method
@@ -700,8 +735,7 @@ class Helpers {
 	}
 
 	/**
-	 * Convert date from app's timezone to user's timezone before saving to db.
-	 * This customizes all dates according to the user's set timezone in their settings.
+	 * Convert date from app's timezone to user's timezone.
 	 * @see self::toAppTimezone() Opposite of this method
 	 * @param  string $date    Date to convert
 	 * @param  string $user_tz User's timezone
@@ -710,11 +744,23 @@ class Helpers {
 	 */
 	public static function toUserTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
 		// Init
-		$app_tz = config('app.timezone');
-		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
-		
-		$carbon = self::convertTimezone($date, $app_tz, $user_tz);
+		$base_tz = config('app.timezone');
+		$user_tz = $user_tz ? $user_tz : session('acctinfo')['timezone'];
+
+		$carbon = self::tz($date, $base_tz, $user_tz);
 		return $carbon->format($format);
+	}
+
+	/**
+	 * Alias for self::toUserTimezone()
+	 * @see self::toAppTimezone() Opposite of this method
+	 * @param  string $date    Date to convert
+	 * @param  string $user_tz User's timezone
+	 * @param  string $format  Format of the date string
+	 * @return array
+	 */
+	public static function userTZ($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
+		return self::toUserTimezone($date, $user_tz, $format);
 	}
 
 	/**
@@ -863,6 +909,40 @@ class Helpers {
 		}
 
 		return $sort_str;
+	}
+
+	/**
+	 * Abort
+	 * @param  int $error   403|404|500|503
+	 * @param  string $message Optional message
+	 * @return bool
+	 */
+	public static function abort($error, $message = '') {
+		abort($error);
+
+		if($message) {
+			Log::error($message);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Convert a array into an associative one
+	 * @param  arr  $arr   Array to convert to assoc
+	 * @param  boolean $lower Lowercase the $key
+	 * @return array         Assoc array
+	 */
+	public static function array_assoc($arr, $lower = true) {
+		foreach($arr as $val) {
+			if($lower) {
+				$new_arr[strtolower($val)] = $val;
+			} else {
+				$new_arr[$val] = $val;
+			}
+		}
+
+		return $new_arr;
 	}
 
 }
