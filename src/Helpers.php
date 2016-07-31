@@ -32,6 +32,9 @@ class Helpers {
 	 */
 	public static function array_collate($results, $assoc = true, $is_indexed = true) {
 
+		// Bouncer
+		if(!$results) return [];
+
 		if($assoc) {
 
 			// Get first 2 values (assoc)
@@ -717,24 +720,6 @@ class Helpers {
 	}
 
 	/**
-	 * Convert date from user's timezone to app's timezone before saving to db.
-	 * This makes sure all dates in the db are of the same timezone.
-	 * @see self::toUserTimezone() Opposite of this method
-	 * @param  string $date    Date to convert
-	 * @param  string $user_tz User's timezone
-	 * @param  string $format  Format of the date string
-	 * @return array
-	 */
-	public static function toAppTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
-		// Init
-		$app_tz = config('app.timezone');
-		$user_tz = $user_tz ? $user_tz : config('acctinfo')['timezone'];
-		
-		$carbon = self::convertTimezone($date, $user_tz, $app_tz);
-		return $carbon->format($format);
-	}
-
-	/**
 	 * Convert date from app's timezone to user's timezone.
 	 * @see self::toAppTimezone() Opposite of this method
 	 * @param  string $date    Date to convert
@@ -753,7 +738,7 @@ class Helpers {
 
 	/**
 	 * Alias for self::toUserTimezone()
-	 * @see self::toAppTimezone() Opposite of this method
+	 * @see self::appTZ() Opposite of this method
 	 * @param  string $date    Date to convert
 	 * @param  string $user_tz User's timezone
 	 * @param  string $format  Format of the date string
@@ -764,8 +749,39 @@ class Helpers {
 	}
 
 	/**
+	 * Convert date from user's timezone to app's timezone.
+	 * @see self::toUserTimezone() Opposite of this method
+	 * @param  string $date    Date to convert
+	 * @param  string $user_tz User's timezone
+	 * @param  string $format  Format of the date string
+	 * @return array
+	 */
+	public static function toAppTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
+		// Init
+		$base_tz = $user_tz ? $user_tz : session('acctinfo')['timezone'];
+		$app_tz  = config('app.timezone');
+
+		$carbon = self::tz($date, $base_tz, $app_tz);
+		return $carbon->format($format);
+	}
+
+	/**
+	 * Alias for self::toAppTimezone()
+	 * @see self::userTZ() Opposite of this method
+	 * @param  string $date    Date to convert
+	 * @param  string $user_tz User's timezone
+	 * @param  string $format  Format of the date string
+	 * @return array
+	 */
+	public static function appTZ($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
+		return self::toAppTimezone($date, $user_tz, $format);
+	}
+
+	/**
 	 * Enclose field names in backticks for MySQL use
 	 * @param  array $field_arr Field names
+	 * @param boolean $backtick Backtick or apostrophe
+	 * @param boolean $split If array is $key=>$val instead of only $val, then output is also $key=>$val
 	 * @return array
 	 */
 	public static function backtick($field_arr, $backtick = true, $split = true) {
