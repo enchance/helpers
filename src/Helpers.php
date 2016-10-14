@@ -758,7 +758,7 @@ class Helpers {
 	 */
 	public static function toAppTimezone($date, $user_tz = '', $format = 'Y-m-d H:i:s') {
 		// Init
-		$base_tz = $user_tz ? $user_tz : session('acctinfo')['timezone'];
+		$base_tz = $user_tz ? $user_tz : session('acctinfo.timezone');
 		$app_tz  = config('app.timezone');
 
 		$carbon = self::tz($date, $base_tz, $app_tz);
