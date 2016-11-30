@@ -28,10 +28,9 @@ class Helpers {
 	 * @param  array  $results    DB result (an array of objects)
 	 * @param  boolean $assoc      Assoc array of the 1st and 2nd or non-assoc using only the 1st
 	 * @param  boolean $is_indexed Useful if $assoc = false
-	 * @param boolean $get_first Only ge tthe first element in case it's an array
 	 * @return array
 	 */
-	public static function array_collate($results, $assoc = true, $is_indexed = true, $get_first = false) {
+	public static function array_collate($results, $assoc = true, $is_indexed = true) {
 		// Init
 		$arr = [];
 
@@ -46,8 +45,8 @@ class Helpers {
 				foreach($results as $val){
 					$val = array_values((array)$val);
 					
-					// Check if array. This fixes a bug if an entry is placed twice due to a double entry. Just get the first.
-					if($get_first) $val[0] = is_array($val[0]) ? $val[0][0] : $val[0];
+					// This fixes a bug if an entry is placed twice due to a double entry thus resulting in an array. Resolves to getting the first element.
+					$val[0] = is_array($val[0]) ? $val[0][0] : $val[0];
 
 					$val[1] = isset($val[1]) ? $val[1] : $val[0];
 					// krumo($val[0]);
