@@ -28,44 +28,59 @@ class Helpers {
 	 * @param  array  $results    DB result (an array of objects)
 	 * @param  boolean $assoc      Assoc array of the 1st and 2nd or non-assoc using only the 1st
 	 * @param  boolean $is_indexed Useful if $assoc = false
+	 * @param boolean $get_first Only ge tthe first element in case it's an array
 	 * @return array
 	 */
-	public static function array_collate($results, $assoc = true, $is_indexed = true) {
+	public static function array_collate($results, $assoc = true, $is_indexed = true, $get_first = false) {
+		// Init
+		$arr = [];
 
 		// Bouncer
 		if(!$results) return [];
 
-		if($assoc) {
+		// DB::beginTransaction();
+		try {
+			if($assoc) {
 
-			// Get first 2 values (assoc)
-			foreach($results as $val){
-				$val = array_values((array)$val);
-				$val[1] = isset($val[1]) ? $val[1] : $val[0];
-				$arr[trim($val[0])] = trim($val[1]);
-			}
-						
-		} else {
-
-			// Get first value only
-			$target_key = (array)$results[0];
-			$target_key = array_keys($target_key);
-			$target_key = $target_key[0];
-
-			if($is_indexed) {
+				// Get first 2 values (assoc)
 				foreach($results as $val){
-					$val = (array)$val;
-					$arr[] = trim($val[$target_key]);
+					$val = array_values((array)$val);
+					
+					// Check if array. This fixes a bug if an entry is placed twice due to a double entry. Just get the first.
+					if($get_first) $val[0] = is_array($val[0]) ? $val[0][0] : $val[0];
+
+					$val[1] = isset($val[1]) ? $val[1] : $val[0];
+					// krumo($val[0]);
+					$arr[trim($val[0])] = trim($val[1]);
 				}
+
 			} else {
-				foreach($results as $val){
-					$val = (array)$val;
-					$arr[trim($val[$target_key])] = trim($val[$target_key]);
+
+				// Get first value only
+				$target_key = (array)$results[0];
+				$target_key = array_keys($target_key);
+				$target_key = $target_key[0];
+
+				if($is_indexed) {
+					foreach($results as $val){
+						$val = (array)$val;
+						$arr[] = trim($val[$target_key]);
+					}
+				} else {
+					foreach($results as $val){
+						$val = (array)$val;
+						$arr[trim($val[$target_key])] = trim($val[$target_key]);
+					}
 				}
+
 			}
 
+			return $arr;
 		}
-
-		return $arr;
+		catch(Exception $e) {
+			throw new Exception('aaa');
+			// return redirect('n/datafail')->with('key', true);
+		}
 	}
 
 	/**
@@ -120,40 +135,47 @@ class Helpers {
 		// Bouncer
 		if(!$results) return [];
 
-		foreach($results as $val){
-			$base = is_array($val) ? $val[$name] : $val->$name;
-			foreach((array)$val as $k=>$v){
+		// DB::beginTransaction();
+		try {
+			foreach($results as $val){
+				$base = is_array($val) ? $val[$name] : $val->$name;
+				foreach((array)$val as $k=>$v){
 
-				if(!$retain_element) {
-					if($base == $v) continue;
-				}
+					if(!$retain_element) {
+						if($base == $v) continue;
+					}
 
-				if($show_all) {
-					$arr[$base][$k][] = $v;
-				}
-				else {
-					if( !isset($arr[$base][$k]) ) $arr[$base][$k][0] = $v;
+					if($show_all) {
+						$arr[$base][$k][] = $v;
+					}
+					else {
+						if( !isset($arr[$base][$k]) ) $arr[$base][$k][0] = $v;
+					}
 				}
 			}
-		}
 
-		// Combine unique entries into a single array
-		// and non-unique entries into a single element
-		foreach($arr as $key=>$val){
-			foreach($val as $k=>$v){
-				$field = array_unique($v);
-				
-				if(count($field) == 1){
-					$field = array_values($field);
-					$field = $field[0];
-					$arr[$key][$k] = $field;
-				} else {
-					$arr[$key][$k] = $field;
+			// Combine unique entries into a single array
+			// and non-unique entries into a single element
+			foreach($arr as $key=>$val){
+				foreach($val as $k=>$v){
+					$field = array_unique($v);
+					
+					if(count($field) == 1){
+						$field = array_values($field);
+						$field = $field[0];
+						$arr[$key][$k] = $field;
+					} else {
+						$arr[$key][$k] = $field;
+					}
 				}
 			}
+			
+			return $arr;
 		}
-		
-		return $arr;
+		catch(Exception $e) {
+			throw new Exception($e->getMessage());
+			// return redirect('n/datafail')->with('key', true);
+		}
 	}
 
 	/**
